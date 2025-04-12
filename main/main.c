@@ -8,8 +8,8 @@
 #include "esp_event.h"
 #include "nvs_flash.h"
 
-#define WIFI_SSID       "TOR"
-#define WIFI_PASSWORD   "test@123"
+#define WIFI_SSID       "420C"
+#define WIFI_PASSWORD   "eastaudience896"
 #define WIFI_MAXIMUM_RETRY  5
 
 static const char *TAG = "wifi_connector";
