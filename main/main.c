@@ -76,7 +76,7 @@ void wifi_init_sta(void)
             /* Setting a password implies station will connect to all security modes including WEP/WPA.
              * However these modes are deprecated and not advisable to be used. Incase your Access point
              * doesn't support WPA2, these mode can be enabled by commenting below line */
-            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+            .threshold.authmode = WIFI_AUTH_WPA_PSK,
             .pmf_cfg = {
                 .capable = true,
                 .required = false
@@ -162,37 +162,37 @@ void http_post_task(void *pvParameters)
         }
         ESP_LOGI(TAG, "Captured frame size: %zu", fb->len);
 
-        esp_http_client_config_t config = {
-            .url = HTTP_SERVER_URL,
-            .event_handler = _http_event_handler,
-            .method = HTTP_METHOD_POST,
-        };
+        // esp_http_client_config_t config = {
+        //     .url = HTTP_SERVER_URL,
+        //     .event_handler = _http_event_handler,
+        //     .method = HTTP_METHOD_POST,
+        // };
         
-        esp_http_client_handle_t client = esp_http_client_init(&config);
+        // esp_http_client_handle_t client = esp_http_client_init(&config);
         
-        // Set headers
-        esp_http_client_set_header(client, "Content-Type", "image/jpeg");
+        // // Set headers
+        // esp_http_client_set_header(client, "Content-Type", "image/jpeg");
         
-        // Set post data
-        esp_http_client_set_post_field(client, (const char *)fb->buf, fb->len);
+        // // Set post data
+        // esp_http_client_set_post_field(client, (const char *)fb->buf, fb->len);
         
-        // Perform the HTTP POST request
-        ESP_LOGI(TAG, "Uploading image to server...");
-        esp_err_t err = esp_http_client_perform(client);
+        // // Perform the HTTP POST request
+        // ESP_LOGI(TAG, "Uploading image to server...");
+        // esp_err_t err = esp_http_client_perform(client);
         
-        if (err == ESP_OK) {
-            int status_code = esp_http_client_get_status_code(client);
-            ESP_LOGI(TAG, "HTTP POST Status = %d", status_code);
-            if (status_code == 200) {
-                ESP_LOGI(TAG, "Image uploaded successfully");
-            } else {
-                ESP_LOGE(TAG, "Server error, status code: %d", status_code);
-            }
-        } else {
-            ESP_LOGE(TAG, "HTTP POST request failed: %s", esp_err_to_name(err));
-        }
+        // if (err == ESP_OK) {
+        //     int status_code = esp_http_client_get_status_code(client);
+        //     ESP_LOGI(TAG, "HTTP POST Status = %d", status_code);
+        //     if (status_code == 200) {
+        //         ESP_LOGI(TAG, "Image uploaded successfully");
+        //     } else {
+        //         ESP_LOGE(TAG, "Server error, status code: %d", status_code);
+        //     }
+        // } else {
+        //     ESP_LOGE(TAG, "HTTP POST request failed: %s", esp_err_to_name(err));
+        // }
         
-        esp_http_client_cleanup(client);
+        // esp_http_client_cleanup(client);
         esp_camera_fb_return(fb);
 
         vTaskDelay(4000 / portTICK_PERIOD_MS);
