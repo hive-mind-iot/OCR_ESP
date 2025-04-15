@@ -10,7 +10,7 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-#define MAX_AP_COUNT 20
+#define MAX_AP_COUNT 20  
 #define TARGET_SSID "neoinfo2"
 
 static const char *TAG = "wifi_scanner";
@@ -28,7 +28,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         if (s_retry_num < 5) {
             esp_wifi_connect();
             s_retry_num++;
-            ESP_LOGI(TAG, "Retrying connection to the AP");
+            ESP_LOGI(TAG, "Retrying connection to the AP (%d/5)", s_retry_num);
         } else {
             xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
             ESP_LOGI(TAG, "Failed to connect to the AP");
@@ -156,6 +156,15 @@ static void connect_to_wifi(void)
     }
 }
 
+void hello_world_task(void *pvParameter)
+{
+    // Task that runs after WiFi is connected
+    while (1) {
+        ESP_LOGI(TAG, "Hello World!");
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
+
 void app_main(void)
 {
     // Initialize NVS
@@ -190,23 +199,41 @@ void app_main(void)
     if (target_found) {
         // Connect to the target network
         connect_to_wifi();
-    } else {
-        ESP_LOGW(TAG, "Target network '%s' not found", TARGET_SSID);
+        
+        // Check if connection was successful
+        if (xEventGroupGetBits(wifi_event_group) & WIFI_CONNECTED_BIT) {
+            // Connection successful, create the hello world task
+            xTaskCreate(&hello_world_task, "hello_world_task", 2048, NULL, 5, NULL);
+            
+            // Enter main loop - no more scanning needed
+            while (1) {
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                // Just keep the main task alive, the hello_world_task will run independently
+            }
+        }
     }
     
-    // Continue with regular scanning
+    // If we reach here, either the target wasn't found or connection failed
+    // Continue with scanning at intervals until we find and connect to the target
     while (1) {
-        ESP_LOGI(TAG, "Scanning again in 10 seconds...");
+        ESP_LOGI(TAG, "Target not connected. Will scan again in 10 seconds...");
         vTaskDelay(10000 / portTICK_PERIOD_MS);
         
-        // If we're not already connected, try to scan and connect again
-        if (!(xEventGroupGetBits(wifi_event_group) & WIFI_CONNECTED_BIT)) {
-            if (wifi_scan_and_connect()) {
-                connect_to_wifi();
+        target_found = wifi_scan_and_connect();
+        if (target_found) {
+            connect_to_wifi();
+            
+            // Check if connection was successful
+            if (xEventGroupGetBits(wifi_event_group) & WIFI_CONNECTED_BIT) {
+                // Connection successful, create the hello world task
+                xTaskCreate(&hello_world_task, "hello_world_task", 2048, NULL, 5, NULL);
+                
+                // Enter main loop - no more scanning needed
+                while (1) {
+                    vTaskDelay(1000 / portTICK_PERIOD_MS);
+                    // Just keep the main task alive, the hello_world_task will run independently
+                }
             }
-        } else {
-            // Just do a scan without attempting to connect
-            wifi_scan_and_connect();
         }
     }
 }
