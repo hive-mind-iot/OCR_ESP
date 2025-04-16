@@ -132,7 +132,7 @@ static void connect_to_wifi(void)
         .sta = {
             .ssid = TARGET_SSID,
             .password = TARGET_PASSWORD,  // WPA2 password
-            .threshold.authmode = WIFI_AUTH_WPA2_PSK,  // Changed auth mode to WPA2_PSK
+            .threshold.authmode = WIFI_AUTH_WPA_PSK,  // Changed auth mode to WPA2_PSK
         },
     };
     
