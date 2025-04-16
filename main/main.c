@@ -220,7 +220,7 @@ void app_main(void)
         // Check if connection was successful
         if (xEventGroupGetBits(wifi_event_group) & WIFI_CONNECTED_BIT) {
             // Connection successful, create the hello world task
-            xTaskCreate(&hello_world_task, "hello_world_task", 2048, NULL, 5, NULL);
+            xTaskCreate(&image_capture_task, "hello_world_task", 5*2048, NULL, 5, NULL);
             
             // Enter main loop - no more scanning needed
             while (1) {
