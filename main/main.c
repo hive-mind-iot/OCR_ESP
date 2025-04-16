@@ -10,10 +10,13 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 #include "camera_manager.h"
+#include "esp_http_client.h"
 
 #define MAX_AP_COUNT 20  
 #define TARGET_SSID "neoinfo2"
 #define TARGET_PASSWORD "Plhi@2025@1"  // Added password for WPA2 security
+
+#define HTTP_SERVER_URL       "http://10.42.0.113:5000/upload"
 
 static const char *TAG = "wifi_scanner";
 static EventGroupHandle_t wifi_event_group;
@@ -157,6 +160,42 @@ static void connect_to_wifi(void)
     }
 }
 
+esp_err_t _http_event_handler(esp_http_client_event_t *evt)
+{
+    switch(evt->event_id) {
+        case HTTP_EVENT_ERROR:
+            ESP_LOGI(TAG, "HTTP_EVENT_ERROR");
+            break;
+        case HTTP_EVENT_ON_CONNECTED:
+            ESP_LOGI(TAG, "HTTP_EVENT_ON_CONNECTED");
+            break;
+        case HTTP_EVENT_HEADER_SENT:
+            ESP_LOGI(TAG, "HTTP_EVENT_HEADER_SENT");
+            break;
+        case HTTP_EVENT_ON_HEADER:
+            ESP_LOGI(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
+            break;
+        case HTTP_EVENT_ON_DATA:
+            ESP_LOGI(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+            if (evt->data_len) {
+                // Print the first 100 bytes of the response or less
+                int print_len = evt->data_len > 100 ? 100 : evt->data_len;
+                ESP_LOGI(TAG, "HTTP Response (first %d bytes): %.*s", print_len, print_len, (char*)evt->data);
+            }
+            break;
+        case HTTP_EVENT_ON_FINISH:
+            ESP_LOGI(TAG, "HTTP_EVENT_ON_FINISH");
+            break;
+        case HTTP_EVENT_DISCONNECTED:
+            ESP_LOGI(TAG, "HTTP_EVENT_DISCONNECTED");
+            break;
+        default:
+            ESP_LOGI(TAG, "HTTP_EVENT_UNKNOWN");
+            break;
+    }
+    return ESP_OK;
+}
+
 void image_capture_task(void *pvParameter)
 {
     // Task that runs after WiFi is connected
@@ -177,8 +216,41 @@ void image_capture_task(void *pvParameter)
             continue;
         }
         ESP_LOGI(TAG, "Captured image size: %zu bytes", fb->len);
+
+        esp_http_client_config_t config = {
+            .url = HTTP_SERVER_URL,
+            .event_handler = _http_event_handler,
+            .method = HTTP_METHOD_POST,
+        };
+        
+        esp_http_client_handle_t client = esp_http_client_init(&config);
+        
+        // Set headers
+        esp_http_client_set_header(client, "Content-Type", "image/jpeg");
+        
+        // Set post data
+        esp_http_client_set_post_field(client, (const char *)fb->buf, fb->len);
+        
+        // Perform the HTTP POST request
+        ESP_LOGI(TAG, "Uploading image to server...");
+        esp_err_t err = esp_http_client_perform(client);
+        
+        if (err == ESP_OK) {
+            int status_code = esp_http_client_get_status_code(client);
+            ESP_LOGI(TAG, "HTTP POST Status = %d", status_code);
+            if (status_code == 200) {
+                ESP_LOGI(TAG, "Image uploaded successfully");
+            } else {
+                ESP_LOGE(TAG, "Server error, status code: %d", status_code);
+            }
+        } else {
+            ESP_LOGE(TAG, "HTTP POST request failed: %s", esp_err_to_name(err));
+        }
+
+        esp_http_client_cleanup(client);
+
         esp_camera_fb_return(fb);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(4000 / portTICK_PERIOD_MS);
     }
 }
 
