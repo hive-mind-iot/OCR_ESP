@@ -12,6 +12,7 @@
 
 #define MAX_AP_COUNT 20  
 #define TARGET_SSID "neoinfo2"
+#define TARGET_PASSWORD "Plhi@2025@1"  // Added password for WPA2 security
 
 static const char *TAG = "wifi_scanner";
 static EventGroupHandle_t wifi_event_group;
@@ -130,9 +131,8 @@ static void connect_to_wifi(void)
     wifi_config_t wifi_config = {
         .sta = {
             .ssid = TARGET_SSID,
-            // No password for open network
-            .password = "",
-            .threshold.authmode = WIFI_AUTH_OPEN,
+            .password = TARGET_PASSWORD,  // WPA2 password
+            .threshold.authmode = WIFI_AUTH_WPA2_PSK,  // Changed auth mode to WPA2_PSK
         },
     };
     
