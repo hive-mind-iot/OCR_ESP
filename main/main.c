@@ -16,7 +16,7 @@
 #define TARGET_SSID "neoinfo2"
 #define TARGET_PASSWORD "Plhi@2025@1"  // Added password for WPA2 security
 
-#define HTTP_SERVER_URL       "http://10.42.0.113:5000/upload"
+#define HTTP_SERVER_URL       "http://10.42.0.1:5000/upload"
 
 static const char *TAG = "wifi_scanner";
 static EventGroupHandle_t wifi_event_group;
